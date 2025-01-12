@@ -41,6 +41,13 @@ pub fn build(b: *std.Build) void {
     constant_module.addImport("raylib", raylib);
     exe.root_module.addImport("constants", constant_module);
 
+    const entities_module = b.addModule("entities", .{
+        .root_source_file = b.path("src/entities/root.zig"),
+    });
+    entities_module.addImport("raylib", raylib);
+    entities_module.addImport("constants", constant_module);
+    exe.root_module.addImport("entities", entities_module);
+
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).
