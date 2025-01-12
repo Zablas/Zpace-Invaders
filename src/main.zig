@@ -1,4 +1,7 @@
 const rl = @import("raylib");
+const constants = @import("constants");
+
+const colors = constants.colors;
 
 pub fn main() !void {
     rl.initWindow(750, 700, "Zpace invaders");
@@ -11,6 +14,6 @@ pub fn main() !void {
         rl.beginDrawing();
         defer rl.endDrawing();
 
-        rl.clearBackground(rl.Color.black);
+        rl.clearBackground(colors.grey);
     }
 }
