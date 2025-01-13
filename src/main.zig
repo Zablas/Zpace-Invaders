@@ -1,3 +1,4 @@
+const std = @import("std");
 const rl = @import("raylib");
 const constants = @import("constants");
 const entities = @import("entities");
@@ -11,16 +12,21 @@ pub fn main() !void {
     rl.setTargetFPS(60);
     rl.setExitKey(rl.KeyboardKey.null);
 
-    var game = try entities.Game.init();
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var game = try entities.Game.init(allocator);
     defer game.deinit();
 
     while (!rl.windowShouldClose()) {
         rl.beginDrawing();
         defer rl.endDrawing();
 
-        game.handleInput();
+        try game.handleInput();
 
         rl.clearBackground(colors.grey);
         game.draw();
+        game.update();
     }
 }
