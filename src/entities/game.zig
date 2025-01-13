@@ -1,23 +1,29 @@
 const std = @import("std");
 const rl = @import("raylib");
-const Spaceship = @import("spaceship.zig").Spaceship;
 const obstacle = @import("obstacle.zig");
+const alien = @import("alien.zig");
+const Spaceship = @import("spaceship.zig").Spaceship;
 
 pub const Game = struct {
     spaceship: Spaceship,
-    obstacles: [4]obstacle.Obstacle = undefined,
+    aliens: std.ArrayList(alien.Alien),
+    obstacles: [4]obstacle.Obstacle,
 
     pub fn init(allocator: std.mem.Allocator) !Game {
-        var game = Game{
+        return Game{
             .spaceship = try Spaceship.init(allocator),
+            .obstacles = try createObstacles(allocator),
+            .aliens = try createAliens(allocator),
         };
-        game.obstacles = try createObstacles(allocator);
-
-        return game;
     }
 
     pub fn deinit(self: *Game) void {
         self.spaceship.deinit();
+
+        for (self.aliens.items) |*a| {
+            a.deinit();
+        }
+        self.aliens.deinit();
 
         for (&self.obstacles) |*o| {
             o.deinit();
@@ -33,6 +39,10 @@ pub const Game = struct {
 
         for (self.obstacles) |o| {
             o.draw();
+        }
+
+        for (self.aliens.items) |a| {
+            a.draw();
         }
     }
 
@@ -81,5 +91,24 @@ pub const Game = struct {
         }
 
         return obstacles;
+    }
+
+    fn createAliens(allocator: std.mem.Allocator) !std.ArrayList(alien.Alien) {
+        var aliens = std.ArrayList(alien.Alien).init(allocator);
+
+        for (0..5) |row| {
+            for (0..11) |column| {
+                const x: f32 = @floatFromInt(column * 55 + 75);
+                const y: f32 = @floatFromInt(row * 55 + 110);
+                const alien_type: alien.AlienType = switch (row) {
+                    0 => .Type3,
+                    1, 2 => .Type2,
+                    else => .Type1,
+                };
+                try aliens.append(try alien.Alien.init(alien_type, rl.Vector2{ .x = x, .y = y }));
+            }
+        }
+
+        return aliens;
     }
 };
