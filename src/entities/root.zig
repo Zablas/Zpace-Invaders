@@ -6,3 +6,6 @@ pub const Game = game.Game;
 
 const laser = @import("laser.zig");
 pub const Laser = laser.Laser;
+
+const obstacle = @import("obstacle.zig");
+pub const Obstacle = obstacle.Obstacle;
