@@ -6,30 +6,45 @@ pub const AlienType = enum {
     Type3,
 };
 
+pub var alien_images = [3]?rl.Texture2D{ null, null, null };
+
 pub const Alien = struct {
-    image: rl.Texture2D,
     alien_type: AlienType,
     position: rl.Vector2,
 
     pub fn init(alien_type: AlienType, position: rl.Vector2) !Alien {
-        const image = switch (alien_type) {
-            .Type1 => try rl.loadTexture("assets/textures/alien_1.png"),
-            .Type2 => try rl.loadTexture("assets/textures/alien_2.png"),
-            .Type3 => try rl.loadTexture("assets/textures/alien_3.png"),
-        };
+        const id: usize = @intFromEnum(alien_type);
+
+        if (alien_images[id] == null) {
+            alien_images[id] = switch (alien_type) {
+                .Type1 => try rl.loadTexture("assets/textures/alien_1.png"),
+                .Type2 => try rl.loadTexture("assets/textures/alien_2.png"),
+                .Type3 => try rl.loadTexture("assets/textures/alien_3.png"),
+            };
+        }
 
         return Alien{
             .alien_type = alien_type,
             .position = position,
-            .image = image,
         };
     }
 
-    pub fn deinit(self: *Alien) void {
-        rl.unloadTexture(self.image);
-    }
+    pub fn deinit(_: *Alien) void {}
 
     pub fn draw(self: Alien) void {
-        rl.drawTextureV(self.image, self.position, rl.Color.white);
+        const id: usize = @intFromEnum(self.alien_type);
+        rl.drawTextureV(alien_images[id].?, self.position, rl.Color.white);
+    }
+
+    pub fn update(self: *Alien, direction: f32) void {
+        self.position.x += direction;
+    }
+
+    pub fn unloadIamges() void {
+        for (&alien_images) |*image| {
+            if (image.* != null) {
+                rl.unloadTexture(image.*.?);
+            }
+        }
     }
 };

@@ -3,27 +3,33 @@ const rl = @import("raylib");
 const obstacle = @import("obstacle.zig");
 const alien = @import("alien.zig");
 const Spaceship = @import("spaceship.zig").Spaceship;
+const Laser = @import("laser.zig").Laser;
 
 pub const Game = struct {
     spaceship: Spaceship,
     aliens: std.ArrayList(alien.Alien),
+    alien_lasers: std.ArrayList(Laser),
     obstacles: [4]obstacle.Obstacle,
+    time_last_alien_fired: f64,
+    aliens_direction: f32 = 1,
+    alien_laser_interval: f64 = 0.35,
 
     pub fn init(allocator: std.mem.Allocator) !Game {
         return Game{
             .spaceship = try Spaceship.init(allocator),
             .obstacles = try createObstacles(allocator),
             .aliens = try createAliens(allocator),
+            .alien_lasers = std.ArrayList(Laser).init(allocator),
+            .time_last_alien_fired = rl.getTime(),
         };
     }
 
     pub fn deinit(self: *Game) void {
         self.spaceship.deinit();
 
-        for (self.aliens.items) |*a| {
-            a.deinit();
-        }
+        alien.Alien.unloadIamges();
         self.aliens.deinit();
+        self.alien_lasers.deinit();
 
         for (&self.obstacles) |*o| {
             o.deinit();
@@ -37,6 +43,10 @@ pub const Game = struct {
             laser.draw();
         }
 
+        for (self.alien_lasers.items) |laser| {
+            laser.draw();
+        }
+
         for (self.obstacles) |o| {
             o.draw();
         }
@@ -46,8 +56,15 @@ pub const Game = struct {
         }
     }
 
-    pub fn update(self: *Game) void {
+    pub fn update(self: *Game) !void {
         for (self.spaceship.lasers.items) |*laser| {
+            laser.update();
+        }
+
+        self.moveAliens();
+
+        try self.alienShootLaser();
+        for (self.alien_lasers.items) |*laser| {
             laser.update();
         }
 
@@ -66,11 +83,65 @@ pub const Game = struct {
         }
     }
 
+    pub fn moveAliens(self: *Game) void {
+        for (self.aliens.items) |*a| {
+            const id: usize = @intFromEnum(a.alien_type);
+            if (alien.alien_images[id] != null and @as(c_int, @intFromFloat(a.position.x)) + alien.alien_images[id].?.width > rl.getScreenWidth()) {
+                self.aliens_direction = -1;
+                self.moveDownAliens(4);
+            } else if (a.position.x < 0) {
+                self.aliens_direction = 1;
+                self.moveDownAliens(4);
+            }
+
+            a.update(self.aliens_direction);
+        }
+    }
+
+    fn moveDownAliens(self: *Game, distance: f32) void {
+        for (self.aliens.items) |*a| {
+            a.position.y += distance;
+        }
+    }
+
+    fn alienShootLaser(self: *Game) !void {
+        const curr_time = rl.getTime();
+        if (curr_time - self.time_last_alien_fired < self.alien_laser_interval or self.aliens.items.len == 0) {
+            return;
+        }
+        self.time_last_alien_fired = curr_time;
+
+        const index: usize = @intCast(rl.getRandomValue(0, @intCast(self.aliens.items.len - 1)));
+        const al = self.aliens.items[index];
+        const id: usize = @intFromEnum(al.alien_type);
+        const image = alien.alien_images[id];
+        if (image == null) {
+            return;
+        }
+
+        const position = rl.Vector2{
+            .x = al.position.x + @as(f32, @floatFromInt(image.?.width)) / 2,
+            .y = al.position.y + @as(f32, @floatFromInt(image.?.height)),
+        };
+        const laser = Laser.init(position, 6);
+
+        try self.alien_lasers.append(laser);
+    }
+
     fn deleteInactiveLasers(self: *Game) void {
         var i: usize = 0;
         while (i < self.spaceship.lasers.items.len) {
             if (!self.spaceship.lasers.items[i].is_active) {
                 _ = self.spaceship.lasers.swapRemove(i);
+            } else {
+                i += 1;
+            }
+        }
+
+        i = 0;
+        while (i < self.alien_lasers.items.len) {
+            if (!self.alien_lasers.items[i].is_active) {
+                _ = self.alien_lasers.swapRemove(i);
             } else {
                 i += 1;
             }

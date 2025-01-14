@@ -27,6 +27,6 @@ pub fn main() !void {
 
         rl.clearBackground(colors.grey);
         game.draw();
-        game.update();
+        try game.update();
     }
 }
