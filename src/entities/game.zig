@@ -4,28 +4,38 @@ const obstacle = @import("obstacle.zig");
 const alien = @import("alien.zig");
 const Spaceship = @import("spaceship.zig").Spaceship;
 const Laser = @import("laser.zig").Laser;
+const MysteryShip = @import("mystery_ship.zig").MysteryShip;
 
 pub const Game = struct {
     spaceship: Spaceship,
     aliens: std.ArrayList(alien.Alien),
     alien_lasers: std.ArrayList(Laser),
     obstacles: [4]obstacle.Obstacle,
+    mystery_ship: MysteryShip,
     time_last_alien_fired: f64,
     aliens_direction: f32 = 1,
     alien_laser_interval: f64 = 0.35,
+    mystery_ship_spawn_interval: f64,
+    time_last_spawn: f64,
 
     pub fn init(allocator: std.mem.Allocator) !Game {
+        const curr_time = rl.getTime();
+
         return Game{
             .spaceship = try Spaceship.init(allocator),
             .obstacles = try createObstacles(allocator),
             .aliens = try createAliens(allocator),
             .alien_lasers = std.ArrayList(Laser).init(allocator),
-            .time_last_alien_fired = rl.getTime(),
+            .time_last_alien_fired = curr_time,
+            .mystery_ship = try MysteryShip.init(),
+            .time_last_spawn = curr_time,
+            .mystery_ship_spawn_interval = @floatFromInt(rl.getRandomValue(10, 20)),
         };
     }
 
     pub fn deinit(self: *Game) void {
         self.spaceship.deinit();
+        self.mystery_ship.deinit();
 
         alien.Alien.unloadIamges();
         self.aliens.deinit();
@@ -54,9 +64,18 @@ pub const Game = struct {
         for (self.aliens.items) |a| {
             a.draw();
         }
+
+        self.mystery_ship.draw();
     }
 
     pub fn update(self: *Game) !void {
+        const curr_time = rl.getTime();
+        if (curr_time - self.time_last_spawn > self.mystery_ship_spawn_interval) {
+            self.mystery_ship.spawn();
+            self.time_last_spawn = curr_time;
+            self.mystery_ship_spawn_interval = @floatFromInt(rl.getRandomValue(10, 20));
+        }
+
         for (self.spaceship.lasers.items) |*laser| {
             laser.update();
         }
@@ -67,6 +86,7 @@ pub const Game = struct {
         for (self.alien_lasers.items) |*laser| {
             laser.update();
         }
+        self.mystery_ship.update();
 
         self.deleteInactiveLasers();
     }
