@@ -37,4 +37,8 @@ pub const Laser = struct {
             self.is_active = false;
         }
     }
+
+    pub fn getRect(self: Laser) rl.Rectangle {
+        return rl.Rectangle.init(self.position.x, self.position.y, 8, 15);
+    }
 };

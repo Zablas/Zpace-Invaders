@@ -88,6 +88,7 @@ pub const Game = struct {
         }
         self.mystery_ship.update();
 
+        self.checkForCollisions();
         self.deleteInactiveLasers();
     }
 
@@ -201,5 +202,85 @@ pub const Game = struct {
         }
 
         return aliens;
+    }
+
+    fn checkForCollisions(self: *Game) void {
+        // Spaceship lasers
+        outer: for (self.spaceship.lasers.items) |*laser| {
+            const laser_rect = laser.getRect();
+
+            var i: usize = 0;
+            while (i < self.aliens.items.len) {
+                if (rl.checkCollisionRecs(laser_rect, self.aliens.items[i].getRect())) {
+                    _ = self.aliens.swapRemove(i);
+                    laser.is_active = false;
+                    break :outer;
+                } else {
+                    i += 1;
+                }
+            }
+
+            for (&self.obstacles) |*o| {
+                var j: usize = 0;
+                while (j < o.blocks.items.len) {
+                    if (rl.checkCollisionRecs(laser_rect, o.blocks.items[j].getRect())) {
+                        _ = o.blocks.swapRemove(j);
+                        laser.is_active = false;
+                    } else {
+                        j += 1;
+                    }
+                }
+            }
+
+            if (rl.checkCollisionRecs(laser_rect, self.mystery_ship.getRect())) {
+                self.mystery_ship.is_alive = false;
+                laser.is_active = false;
+                break;
+            }
+        }
+
+        // Alien lasers
+        const spaceship_rect = self.spaceship.getRect();
+        for (self.alien_lasers.items) |*laser| {
+            const laser_rect = laser.getRect();
+
+            if (rl.checkCollisionRecs(laser_rect, spaceship_rect)) {
+                laser.is_active = false;
+                std.log.debug("Spaceship hit!", .{});
+                break;
+            }
+
+            for (&self.obstacles) |*o| {
+                var j: usize = 0;
+                while (j < o.blocks.items.len) {
+                    if (rl.checkCollisionRecs(laser_rect, o.blocks.items[j].getRect())) {
+                        _ = o.blocks.swapRemove(j);
+                        laser.is_active = false;
+                    } else {
+                        j += 1;
+                    }
+                }
+            }
+        }
+
+        // Alien collision with an obstacle
+        for (self.aliens.items) |a| {
+            const alien_rect = a.getRect();
+
+            for (&self.obstacles) |*o| {
+                var i: usize = 0;
+                while (i < o.blocks.items.len) {
+                    if (rl.checkCollisionRecs(alien_rect, o.blocks.items[i].getRect())) {
+                        _ = o.blocks.swapRemove(i);
+                    } else {
+                        i += 1;
+                    }
+                }
+            }
+
+            if (rl.checkCollisionRecs(alien_rect, spaceship_rect)) {
+                std.log.debug("Spaceship hit by alien", .{});
+            }
+        }
     }
 };

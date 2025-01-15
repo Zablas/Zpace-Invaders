@@ -19,4 +19,8 @@ pub const Block = struct {
             colors.yellow,
         );
     }
+
+    pub fn getRect(self: Block) rl.Rectangle {
+        return rl.Rectangle.init(self.position.x, self.position.y, 3, 3);
+    }
 };

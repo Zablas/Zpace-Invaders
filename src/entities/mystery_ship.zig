@@ -50,4 +50,13 @@ pub const MysteryShip = struct {
 
         rl.drawTextureV(self.image, self.position, rl.Color.white);
     }
+
+    pub fn getRect(self: MysteryShip) rl.Rectangle {
+        return rl.Rectangle.init(
+            self.position.x,
+            self.position.y,
+            if (self.is_alive) @floatFromInt(self.image.width) else 0,
+            if (self.is_alive) @floatFromInt(self.image.height) else 0,
+        );
+    }
 };

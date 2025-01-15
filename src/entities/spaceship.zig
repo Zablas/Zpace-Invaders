@@ -60,4 +60,13 @@ pub const Spaceship = struct {
         };
         try self.lasers.append(laser.Laser.init(position, -6));
     }
+
+    pub fn getRect(self: Spaceship) rl.Rectangle {
+        return rl.Rectangle.init(
+            self.position.x,
+            self.position.y,
+            @floatFromInt(self.image.width),
+            @floatFromInt(self.image.height),
+        );
+    }
 };

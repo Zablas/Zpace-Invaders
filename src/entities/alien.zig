@@ -47,4 +47,16 @@ pub const Alien = struct {
             }
         }
     }
+
+    pub fn getRect(self: Alien) rl.Rectangle {
+        const id: usize = @intFromEnum(self.alien_type);
+        const image = alien_images[id];
+
+        return rl.Rectangle.init(
+            self.position.x,
+            self.position.y,
+            if (image != null) @floatFromInt(image.?.width) else 0,
+            if (image != null) @floatFromInt(image.?.height) else 0,
+        );
+    }
 };
