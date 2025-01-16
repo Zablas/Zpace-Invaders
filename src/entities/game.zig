@@ -23,7 +23,7 @@ pub const Game = struct {
     lives: usize = 3,
     is_running: bool = true,
     score: i32 = 0,
-    high_score: i32 = 0,
+    high_score: i32,
     allocator: std.mem.Allocator,
 
     pub fn init(allocator: std.mem.Allocator) !Game {
@@ -39,6 +39,7 @@ pub const Game = struct {
             .time_last_spawn = curr_time,
             .mystery_ship_spawn_interval = @floatFromInt(rl.getRandomValue(10, 20)),
             .allocator = allocator,
+            .high_score = loadHighScoreFromFile(allocator) catch 0,
         };
     }
 
@@ -108,7 +109,7 @@ pub const Game = struct {
         }
         self.mystery_ship.update();
 
-        self.checkForCollisions();
+        try self.checkForCollisions();
         self.deleteInactiveLasers();
     }
 
@@ -230,7 +231,7 @@ pub const Game = struct {
         return aliens;
     }
 
-    fn checkForCollisions(self: *Game) void {
+    fn checkForCollisions(self: *Game) !void {
         // Spaceship lasers
         outer: for (self.spaceship.lasers.items) |*laser| {
             const laser_rect = laser.getRect();
@@ -245,7 +246,7 @@ pub const Game = struct {
                         .Type2 => 200,
                         .Type3 => 300,
                     };
-                    self.checkForHighScore();
+                    try self.checkForHighScore();
 
                     laser.is_active = false;
                     break :outer;
@@ -270,7 +271,7 @@ pub const Game = struct {
                 self.mystery_ship.is_alive = false;
                 laser.is_active = false;
                 self.score += 500;
-                self.checkForHighScore();
+                try self.checkForHighScore();
                 break;
             }
         }
@@ -323,9 +324,10 @@ pub const Game = struct {
         }
     }
 
-    fn checkForHighScore(self: *Game) void {
+    fn checkForHighScore(self: *Game) !void {
         if (self.score > self.high_score) {
             self.high_score = self.score;
+            try self.saveHighScoreToFile();
         }
     }
 
@@ -354,5 +356,28 @@ pub const Game = struct {
         self.lives = 3;
         self.is_running = true;
         self.score = 0;
+    }
+
+    fn saveHighScoreToFile(self: Game) !void {
+        const file = try std.fs.cwd().createFile("highscore.txt", .{});
+        defer file.close();
+
+        try file.writer().print("{d}", .{self.high_score});
+    }
+
+    fn loadHighScoreFromFile(allocator: std.mem.Allocator) !i32 {
+        const file = std.fs.cwd().openFile("highscore.txt", .{}) catch |err| {
+            std.log.err("Failed to open file: {s}", .{@errorName(err)});
+            return 0;
+        };
+        defer file.close();
+
+        const read_bytes = file.readToEndAlloc(allocator, 16) catch |err| {
+            std.log.err("Failed to read file: {s}", .{@errorName(err)});
+            return 0;
+        };
+        defer allocator.free(read_bytes);
+
+        return try std.fmt.parseInt(i32, read_bytes, 10);
     }
 };
