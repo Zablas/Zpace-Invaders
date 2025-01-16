@@ -1,6 +1,9 @@
 const std = @import("std");
 const rl = @import("raylib");
 const laser = @import("laser.zig");
+const constants = @import("constants");
+
+const ui = constants.ui;
 
 pub const Spaceship = struct {
     image: rl.Texture2D,
@@ -11,7 +14,7 @@ pub const Spaceship = struct {
     pub fn init(allocator: std.mem.Allocator) !Spaceship {
         const image = try rl.loadTexture("assets/textures/spaceship.png");
         const position_x = @divFloor(rl.getScreenWidth() - image.width, 2);
-        const position_y = rl.getScreenHeight() - image.height;
+        const position_y = rl.getScreenHeight() - image.height - 2 * ui.offset;
 
         return Spaceship{
             .image = image,
@@ -33,15 +36,16 @@ pub const Spaceship = struct {
     pub fn moveLeft(self: *Spaceship) void {
         self.position.x -= 7;
 
-        if (self.position.x < 0) {
-            self.position.x = 0;
+        const constraint = @divFloor(ui.offset, 2);
+        if (self.position.x < constraint) {
+            self.position.x = constraint;
         }
     }
 
     pub fn moveRight(self: *Spaceship) void {
         self.position.x += 7;
 
-        const right_boundary: f32 = @floatFromInt(rl.getScreenWidth() - self.image.width);
+        const right_boundary: f32 = @floatFromInt(rl.getScreenWidth() - self.image.width - @divFloor(ui.offset, 2));
         if (self.position.x > right_boundary) {
             self.position.x = right_boundary;
         }

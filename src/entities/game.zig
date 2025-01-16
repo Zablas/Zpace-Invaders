@@ -5,6 +5,9 @@ const alien = @import("alien.zig");
 const Spaceship = @import("spaceship.zig").Spaceship;
 const Laser = @import("laser.zig").Laser;
 const MysteryShip = @import("mystery_ship.zig").MysteryShip;
+const constants = @import("constants");
+
+const ui = constants.ui;
 
 pub const Game = struct {
     spaceship: Spaceship,
@@ -197,7 +200,7 @@ pub const Game = struct {
             const offset_x = @as(f32, @floatFromInt(i + 1)) * gap + @as(f32, @floatFromInt(i * obstacle_width));
             obstacles[i] = try obstacle.Obstacle.init(
                 allocator,
-                rl.Vector2{ .x = offset_x, .y = @floatFromInt(rl.getScreenHeight() - 100) },
+                rl.Vector2{ .x = offset_x, .y = @floatFromInt(rl.getScreenHeight() - 100 - 2 * ui.offset) },
             );
         }
 
