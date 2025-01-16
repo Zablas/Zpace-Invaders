@@ -1,4 +1,7 @@
 const rl = @import("raylib");
+const constants = @import("constants");
+
+const ui = constants.ui;
 
 pub const MysteryShip = struct {
     image: rl.Texture2D,
@@ -22,10 +25,10 @@ pub const MysteryShip = struct {
         const side = rl.getRandomValue(0, 1);
 
         if (side == 0) {
-            self.position.x = 0;
+            self.position.x = @divFloor(ui.offset, 2);
             self.speed = 3;
         } else {
-            self.position.x = @floatFromInt(rl.getScreenWidth() - self.image.width);
+            self.position.x = @floatFromInt(rl.getScreenWidth() - self.image.width - @divFloor(ui.offset, 2));
             self.speed = -3;
         }
 
@@ -38,7 +41,9 @@ pub const MysteryShip = struct {
         }
 
         self.position.x += self.speed;
-        if (self.position.x > @as(f32, @floatFromInt(rl.getScreenWidth() - self.image.width)) or self.position.x < 0) {
+        const offset = @divFloor(ui.offset, 2);
+
+        if (self.position.x > @as(f32, @floatFromInt(rl.getScreenWidth() - self.image.width - offset)) or self.position.x < offset) {
             self.is_alive = false;
         }
     }

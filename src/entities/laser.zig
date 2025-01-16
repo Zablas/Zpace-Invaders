@@ -1,5 +1,8 @@
 const rl = @import("raylib");
 const colors = @import("constants").colors;
+const constants = @import("constants");
+
+const ui = constants.ui;
 
 pub const Laser = struct {
     position: rl.Vector2,
@@ -33,7 +36,7 @@ pub const Laser = struct {
         }
 
         self.position.y += @floatFromInt(self.speed);
-        if (self.position.y < 0 or self.position.y > @as(f32, @floatFromInt(rl.getScreenHeight()))) {
+        if (self.position.y < @divFloor(ui.offset, 2) or self.position.y > @as(f32, @floatFromInt(rl.getScreenHeight() - 2 * ui.offset))) {
             self.is_active = false;
         }
     }

@@ -20,7 +20,7 @@ pub const Game = struct {
     alien_laser_interval: f64 = 0.35,
     mystery_ship_spawn_interval: f64,
     time_last_spawn: f64,
-    lives: i32 = 3,
+    lives: usize = 3,
     is_running: bool = true,
     allocator: std.mem.Allocator,
 
@@ -129,10 +129,12 @@ pub const Game = struct {
     pub fn moveAliens(self: *Game) void {
         for (self.aliens.items) |*a| {
             const id: usize = @intFromEnum(a.alien_type);
-            if (alien.alien_images[id] != null and @as(c_int, @intFromFloat(a.position.x)) + alien.alien_images[id].?.width > rl.getScreenWidth()) {
+            const constraint_offset = @divFloor(ui.offset, 2);
+
+            if (alien.alien_images[id] != null and @as(c_int, @intFromFloat(a.position.x)) + alien.alien_images[id].?.width > rl.getScreenWidth() - constraint_offset) {
                 self.aliens_direction = -1;
                 self.moveDownAliens(4);
-            } else if (a.position.x < 0) {
+            } else if (a.position.x < constraint_offset) {
                 self.aliens_direction = 1;
                 self.moveDownAliens(4);
             }
