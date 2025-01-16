@@ -45,7 +45,31 @@ pub fn main() !void {
             life_icon_offset += 50;
         }
 
+        rl.drawTextEx(font, "SCORE", rl.Vector2.init(50, 15), 34, 2, colors.yellow);
+        const score = try formatScoreWithLeadingZeros(allocator, game.score, 5);
+        defer allocator.free(score);
+        rl.drawTextEx(font, score, rl.Vector2.init(50, 40), 34, 2, colors.yellow);
+
+        rl.drawTextEx(font, "HIGH-SCORE", rl.Vector2.init(570, 15), 34, 2, colors.yellow);
+        const high_score = try formatScoreWithLeadingZeros(allocator, game.high_score, 5);
+        defer allocator.free(high_score);
+        rl.drawTextEx(font, high_score, rl.Vector2.init(650, 40), 34, 2, colors.yellow);
+
         game.draw();
         try game.update();
     }
+}
+
+fn formatScoreWithLeadingZeros(allocator: std.mem.Allocator, number: i32, width: usize) ![:0]u8 {
+    const score = rl.textFormat("%d", .{number});
+    const leading_zeros = width - std.mem.len(score);
+
+    const zero_text = try allocator.alloc(u8, width);
+    defer allocator.free(zero_text);
+
+    @memset(zero_text, '0');
+    std.mem.copyForwards(u8, zero_text[leading_zeros..], std.mem.span(score));
+
+    const final_text = try allocator.dupeZ(u8, zero_text);
+    return final_text;
 }

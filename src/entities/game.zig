@@ -22,6 +22,8 @@ pub const Game = struct {
     time_last_spawn: f64,
     lives: usize = 3,
     is_running: bool = true,
+    score: i32 = 0,
+    high_score: i32 = 0,
     allocator: std.mem.Allocator,
 
     pub fn init(allocator: std.mem.Allocator) !Game {
@@ -236,7 +238,15 @@ pub const Game = struct {
             var i: usize = 0;
             while (i < self.aliens.items.len) {
                 if (rl.checkCollisionRecs(laser_rect, self.aliens.items[i].getRect())) {
-                    _ = self.aliens.swapRemove(i);
+                    const hit_alien = self.aliens.swapRemove(i);
+
+                    self.score += switch (hit_alien.alien_type) {
+                        .Type1 => 100,
+                        .Type2 => 200,
+                        .Type3 => 300,
+                    };
+                    self.checkForHighScore();
+
                     laser.is_active = false;
                     break :outer;
                 } else {
@@ -259,6 +269,8 @@ pub const Game = struct {
             if (rl.checkCollisionRecs(laser_rect, self.mystery_ship.getRect())) {
                 self.mystery_ship.is_alive = false;
                 laser.is_active = false;
+                self.score += 500;
+                self.checkForHighScore();
                 break;
             }
         }
@@ -311,6 +323,12 @@ pub const Game = struct {
         }
     }
 
+    fn checkForHighScore(self: *Game) void {
+        if (self.score > self.high_score) {
+            self.high_score = self.score;
+        }
+    }
+
     fn endGame(self: *Game) void {
         self.is_running = false;
     }
@@ -335,5 +353,6 @@ pub const Game = struct {
         self.time_last_spawn = curr_time;
         self.lives = 3;
         self.is_running = true;
+        self.score = 0;
     }
 };
