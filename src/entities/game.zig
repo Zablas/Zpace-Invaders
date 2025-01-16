@@ -17,6 +17,9 @@ pub const Game = struct {
     alien_laser_interval: f64 = 0.35,
     mystery_ship_spawn_interval: f64,
     time_last_spawn: f64,
+    lives: i32 = 3,
+    is_running: bool = true,
+    allocator: std.mem.Allocator,
 
     pub fn init(allocator: std.mem.Allocator) !Game {
         const curr_time = rl.getTime();
@@ -30,14 +33,19 @@ pub const Game = struct {
             .mystery_ship = try MysteryShip.init(),
             .time_last_spawn = curr_time,
             .mystery_ship_spawn_interval = @floatFromInt(rl.getRandomValue(10, 20)),
+            .allocator = allocator,
         };
     }
 
     pub fn deinit(self: *Game) void {
+        alien.Alien.unloadIamges();
+        self.deinitNonMedia();
+    }
+
+    pub fn deinitNonMedia(self: *Game) void {
         self.spaceship.deinit();
         self.mystery_ship.deinit();
 
-        alien.Alien.unloadIamges();
         self.aliens.deinit();
         self.alien_lasers.deinit();
 
@@ -69,6 +77,13 @@ pub const Game = struct {
     }
 
     pub fn update(self: *Game) !void {
+        if (!self.is_running) {
+            if (rl.isKeyPressed(rl.KeyboardKey.enter)) {
+                try self.reset();
+            }
+            return;
+        }
+
         const curr_time = rl.getTime();
         if (curr_time - self.time_last_spawn > self.mystery_ship_spawn_interval) {
             self.mystery_ship.spawn();
@@ -93,6 +108,10 @@ pub const Game = struct {
     }
 
     pub fn handleInput(self: *Game) !void {
+        if (!self.is_running) {
+            return;
+        }
+
         if (rl.isKeyDown(rl.KeyboardKey.d) or rl.isKeyDown(rl.KeyboardKey.right)) {
             self.spaceship.moveRight();
         } else if (rl.isKeyDown(rl.KeyboardKey.a) or rl.isKeyDown(rl.KeyboardKey.left)) {
@@ -246,7 +265,10 @@ pub const Game = struct {
 
             if (rl.checkCollisionRecs(laser_rect, spaceship_rect)) {
                 laser.is_active = false;
-                std.log.debug("Spaceship hit!", .{});
+                self.lives -= 1;
+                if (self.lives == 0) {
+                    self.endGame();
+                }
                 break;
             }
 
@@ -279,8 +301,34 @@ pub const Game = struct {
             }
 
             if (rl.checkCollisionRecs(alien_rect, spaceship_rect)) {
-                std.log.debug("Spaceship hit by alien", .{});
+                self.endGame();
             }
         }
+    }
+
+    fn endGame(self: *Game) void {
+        self.is_running = false;
+    }
+
+    fn reset(self: *Game) !void {
+        self.deinitNonMedia();
+        try self.reinit();
+    }
+
+    fn reinit(self: *Game) !void {
+        const curr_time = rl.getTime();
+
+        self.spaceship = try Spaceship.init(self.allocator);
+        self.aliens = try createAliens(self.allocator);
+        self.alien_lasers = std.ArrayList(Laser).init(self.allocator);
+        self.obstacles = try createObstacles(self.allocator);
+        self.mystery_ship = try MysteryShip.init();
+        self.time_last_alien_fired = curr_time;
+        self.aliens_direction = 1;
+        self.alien_laser_interval = 0.35;
+        self.mystery_ship_spawn_interval = @floatFromInt(rl.getRandomValue(10, 20));
+        self.time_last_spawn = curr_time;
+        self.lives = 3;
+        self.is_running = true;
     }
 };
