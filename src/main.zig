@@ -10,6 +10,9 @@ pub fn main() !void {
     rl.initWindow(750 + ui.offset, 700 + 2 * ui.offset, "Zpace invaders");
     defer rl.closeWindow();
 
+    rl.initAudioDevice();
+    defer rl.closeAudioDevice();
+
     const font = try rl.loadFontEx("assets/fonts/monogram.ttf", 64, null);
     defer rl.unloadFont(font);
 
@@ -23,9 +26,13 @@ pub fn main() !void {
     var game = try entities.Game.init(allocator);
     defer game.deinit();
 
+    rl.playMusicStream(game.music);
+
     while (!rl.windowShouldClose()) {
         rl.beginDrawing();
         defer rl.endDrawing();
+
+        rl.updateMusicStream(game.music);
 
         try game.handleInput();
 

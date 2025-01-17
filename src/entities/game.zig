@@ -25,6 +25,8 @@ pub const Game = struct {
     score: i32 = 0,
     high_score: i32,
     allocator: std.mem.Allocator,
+    music: rl.Music,
+    explosion_sound: rl.Sound,
 
     pub fn init(allocator: std.mem.Allocator) !Game {
         const curr_time = rl.getTime();
@@ -40,11 +42,15 @@ pub const Game = struct {
             .mystery_ship_spawn_interval = @floatFromInt(rl.getRandomValue(10, 20)),
             .allocator = allocator,
             .high_score = loadHighScoreFromFile(allocator) catch 0,
+            .music = try rl.loadMusicStream("assets/audio/music.ogg"),
+            .explosion_sound = try rl.loadSound("assets/audio/explosion.ogg"),
         };
     }
 
     pub fn deinit(self: *Game) void {
         alien.Alien.unloadIamges();
+        rl.unloadMusicStream(self.music);
+        rl.unloadSound(self.explosion_sound);
         self.deinitNonMedia();
     }
 
@@ -249,6 +255,7 @@ pub const Game = struct {
                     try self.checkForHighScore();
 
                     laser.is_active = false;
+                    rl.playSound(self.explosion_sound);
                     break :outer;
                 } else {
                     i += 1;
@@ -272,6 +279,7 @@ pub const Game = struct {
                 laser.is_active = false;
                 self.score += 500;
                 try self.checkForHighScore();
+                rl.playSound(self.explosion_sound);
                 break;
             }
         }

@@ -10,6 +10,7 @@ pub const Spaceship = struct {
     position: rl.Vector2,
     lasers: std.ArrayList(laser.Laser),
     last_fire_time: f64,
+    laser_sound: rl.Sound,
 
     pub fn init(allocator: std.mem.Allocator) !Spaceship {
         const image = try rl.loadTexture("assets/textures/spaceship.png");
@@ -21,11 +22,13 @@ pub const Spaceship = struct {
             .position = rl.Vector2{ .x = @floatFromInt(position_x), .y = @floatFromInt(position_y) },
             .lasers = std.ArrayList(laser.Laser).init(allocator),
             .last_fire_time = rl.getTime(),
+            .laser_sound = try rl.loadSound("assets/audio/laser.ogg"),
         };
     }
 
     pub fn deinit(self: *Spaceship) void {
         rl.unloadTexture(self.image);
+        rl.unloadSound(self.laser_sound);
         self.lasers.deinit();
     }
 
@@ -63,6 +66,8 @@ pub const Spaceship = struct {
             .y = self.position.y,
         };
         try self.lasers.append(laser.Laser.init(position, -6));
+
+        rl.playSound(self.laser_sound);
     }
 
     pub fn getRect(self: Spaceship) rl.Rectangle {
